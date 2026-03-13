@@ -8,7 +8,6 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Check if user exists in local storage on load
         const storedUser = localStorage.getItem('user');
         if (storedUser) {
             setUser(JSON.parse(storedUser));
@@ -26,14 +25,20 @@ export const AuthProvider = ({ children }) => {
         return res.data;
     };
 
-    const register = async (userData) => {
-        const res = await api.post('/auth/register', userData);
+    const adminLogin = async (email, password) => {
+        const res = await api.post('/auth/admin-login', { email, password });
+        if (res.data) {
+            localStorage.setItem('token', res.data.token);
+            localStorage.setItem('user', JSON.stringify(res.data));
+            setUser(res.data);
+        }
         return res.data;
     };
 
-    const verifyOtp = async (phone, otp) => {
-        const res = await api.post('/auth/verify-otp', { phone, otp });
-        if (res.data) {
+    // Register now directly logs the user in (no OTP)
+    const register = async (userData) => {
+        const res = await api.post('/auth/register', userData);
+        if (res.data && res.data.token) {
             localStorage.setItem('token', res.data.token);
             localStorage.setItem('user', JSON.stringify(res.data));
             setUser(res.data);
@@ -48,7 +53,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, login, register, verifyOtp, logout }}>
+        <AuthContext.Provider value={{ user, loading, login, adminLogin, register, logout }}>
             {children}
         </AuthContext.Provider>
     );

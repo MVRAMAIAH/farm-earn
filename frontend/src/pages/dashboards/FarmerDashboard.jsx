@@ -19,7 +19,9 @@ const FarmerDashboard = () => {
         cropImage: '',
         description: '',
         category: 'Available Crops',
-        location: user?.location || ''
+        latitude: '',
+        longitude: '',
+        address: ''
     });
 
     useEffect(() => {
@@ -46,6 +48,21 @@ const FarmerDashboard = () => {
         const file = e.target.files[0];
         if (!file) return;
 
+        // Optionally try to capture geolocation (not mandatory)
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const { latitude, longitude } = position.coords;
+                    setFormData(prev => ({ ...prev, latitude, longitude }));
+                    toast.info(`Location captured: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+                },
+                () => {
+                    // Location denied - that's fine, not required
+                    toast.info('Location not captured. You can still list your crop.');
+                }
+            );
+        }
+
         const imgData = new FormData();
         imgData.append('image', file);
 
@@ -54,10 +71,10 @@ const FarmerDashboard = () => {
             const res = await api.post('/upload', imgData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
-            setFormData({ ...formData, cropImage: res.data.imageUrl });
-            toast.success('Image uploaded successfully');
+            setFormData(prev => ({ ...prev, cropImage: res.data.imageUrl }));
+            toast.success('Image uploaded successfully!');
         } catch (error) {
-            toast.error('Image upload failed');
+            toast.error('Image upload failed. Please try again.');
         } finally {
             setUploading(false);
         }
@@ -65,11 +82,6 @@ const FarmerDashboard = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!formData.cropImage) {
-            toast.error('Please upload a crop image');
-            return;
-        }
-
         try {
             await api.post('/crops/add-crop', formData);
             toast.success('Crop listed successfully!');
@@ -82,7 +94,9 @@ const FarmerDashboard = () => {
                 cropImage: '',
                 description: '',
                 category: 'Available Crops',
-                location: user?.location || ''
+                latitude: '',
+                longitude: '',
+                address: ''
             });
             fetchMyCrops();
         } catch (error) {
@@ -113,7 +127,7 @@ const FarmerDashboard = () => {
                 </button>
             </div>
 
-            {/* Stats Overview */}
+            {/* Stats */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
                 {stats.map((stat, i) => (
                     <div key={i} className="card p-6 flex items-center space-x-4">
@@ -178,7 +192,7 @@ const FarmerDashboard = () => {
                                     <input required type="number" name="quantity" value={formData.quantity} onChange={handleInputChange} className="input-field" placeholder="50" />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Price (per Quintal)</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Price (per Quintal ₹)</label>
                                     <input required type="number" name="price" value={formData.price} onChange={handleInputChange} className="input-field" placeholder="2500" />
                                 </div>
                                 <div>
@@ -186,8 +200,8 @@ const FarmerDashboard = () => {
                                     <input required type="date" name="harvestDate" value={formData.harvestDate} onChange={handleInputChange} className="input-field" />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                                    <input required name="location" value={formData.location} onChange={handleInputChange} className="input-field" placeholder="Punjab, India" />
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Address / Location</label>
+                                    <input type="text" name="address" value={formData.address} onChange={handleInputChange} className="input-field" placeholder="Village, District (optional)" />
                                 </div>
                             </div>
 
@@ -197,8 +211,8 @@ const FarmerDashboard = () => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Crop Image</label>
-                                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-xl active:border-primary-500 hover:border-primary-500 transition-colors">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Crop Image <span className="text-gray-400 font-normal">(optional)</span></label>
+                                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-xl hover:border-primary-500 transition-colors">
                                     {formData.cropImage ? (
                                         <div className="relative w-full aspect-video rounded-lg overflow-hidden">
                                             <img src={formData.cropImage} alt="Preview" className="w-full h-full object-cover" />
@@ -211,14 +225,15 @@ const FarmerDashboard = () => {
                                             </button>
                                         </div>
                                     ) : (
-                                        <div className="space-y-1 text-center">
-                                            <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                                            <div className="flex text-sm text-gray-600">
-                                                <label className="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500">
-                                                    <span>Upload a file</span>
+                                        <div className="space-y-2 text-center">
+                                            <div className="mx-auto h-16 w-16 bg-primary-50 rounded-full flex items-center justify-center text-primary-600">
+                                                <Upload className="h-8 w-8" />
+                                            </div>
+                                            <div className="text-sm text-gray-600">
+                                                <label className="relative cursor-pointer rounded-md font-bold text-primary-600 hover:text-primary-500">
+                                                    <span>Click to upload image</span>
                                                     <input type="file" className="sr-only" onChange={handleImageUpload} accept="image/*" />
                                                 </label>
-                                                <p className="pl-1">or drag and drop</p>
                                             </div>
                                             <p className="text-xs text-gray-500">PNG, JPG, WEBP up to 5MB</p>
                                         </div>
@@ -227,7 +242,7 @@ const FarmerDashboard = () => {
                                 {uploading && <div className="mt-2 flex items-center text-sm text-primary-600"><Loader2 className="animate-spin h-4 w-4 mr-2" /> Uploading...</div>}
                             </div>
 
-                            <div className="pt-4 sticky bottom-0 bg-white">
+                            <div className="pt-2">
                                 <button
                                     type="submit"
                                     disabled={uploading}

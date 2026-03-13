@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../../utils/api';
-import { ShoppingBag, Clock, CheckCircle, XCircle, Search, Package, MapPin, Phone } from 'lucide-react';
+import { ShoppingBag, Clock, CheckCircle, XCircle, Search, Package, Phone, ShoppingCart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const BuyerDashboard = () => {
@@ -36,7 +36,7 @@ const BuyerDashboard = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
                 <div>
-                    <h1 className="text-3xl font-bold font-extrabold text-gray-900 tracking-tight">Buyer Dashboard</h1>
+                    <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Buyer Dashboard</h1>
                     <p className="text-gray-600 mt-2">Track your purchase requests and manage your agricultural orders.</p>
                 </div>
                 <Link to="/marketplace" className="btn-primary inline-flex items-center gap-2">

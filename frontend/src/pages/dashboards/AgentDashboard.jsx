@@ -11,20 +11,36 @@ const AgentDashboard = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('Pending verification');
+    const [coords, setCoords] = useState(null);
+
+    useEffect(() => {
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition((position) => {
+                const { latitude, longitude } = position.coords;
+                setCoords({ latitude, longitude });
+            }, (error) => {
+                console.error("Location access denied");
+            });
+        }
+    }, []);
 
     useEffect(() => {
         fetchCrops();
-    }, []);
+    }, [coords]);
 
     const fetchCrops = async () => {
         try {
             setLoading(true);
-            // Agents need to see crops that need verification
-            const res = await api.get('/crops/all-crops');
-            // Note: Backend /all-crops currently only returns verified. 
-            // We should probably add an agent-specific route or update /all-crops to reflect permissions.
-            // For now, let's fetch all and filter client side for better UX in this demo.
-            // Ideally: api.get('/crops/pending')
+            let url = '/crops/all-crops';
+            const params = {};
+            
+            if (coords) {
+                params.latitude = coords.latitude;
+                params.longitude = coords.longitude;
+                params.radius = 5; // 5km radius
+            }
+
+            const res = await api.get(url, { params });
             setCrops(res.data);
         } catch (error) {
             console.error(error);

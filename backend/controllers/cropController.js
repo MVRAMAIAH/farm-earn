@@ -5,7 +5,12 @@ import Crop from '../models/Crop.js';
 // @route   POST /api/crops/add-crop
 // @access  Private/Farmer
 const addCrop = asyncHandler(async (req, res) => {
-    const { cropName, quantity, price, harvestDate, cropImage, description, category, location } = req.body;
+    const { cropName, quantity, price, harvestDate, cropImage, description, category, latitude, longitude, address } = req.body;
+
+    // Parse coordinates safely — default to [0,0] if not provided
+    const lat = latitude ? parseFloat(latitude) : 0;
+    const lng = longitude ? parseFloat(longitude) : 0;
+    const validCoords = !isNaN(lat) && !isNaN(lng) ? [lng, lat] : [0, 0];
 
     const crop = new Crop({
         cropName,
@@ -13,28 +18,55 @@ const addCrop = asyncHandler(async (req, res) => {
         quantity,
         price,
         harvestDate,
-        cropImage,
+        cropImage: cropImage || '',
         description,
         category,
-        location
+        location: {
+            type: 'Point',
+            coordinates: validCoords,
+            address: address || ''
+        }
     });
 
     const createdCrop = await crop.save();
     res.status(201).json(createdCrop);
 });
 
-// @desc    Get all verified crops for marketplace
+// @desc    Get all crops (role-based)
 // @route   GET /api/crops/all-crops
-// @access  Private/Buyer, Admin
+// @access  Private
 const getAllCrops = asyncHandler(async (req, res) => {
-    let query = { status: 'Verified' };
+    let query = {};
+    const { latitude, longitude, radius = 5 } = req.query;
 
-    // Agents and Admins can see everything (pending, rejected, etc.)
-    if (req.user && (req.user.role === 'Agent' || req.user.role === 'Admin')) {
-        query = {};
+    if (req.user.role === 'Buyer') {
+        query = { status: 'Verified' };
+    } else if (req.user.role === 'Agent') {
+        // Agents see all crops (pending + verified) for their area
+        // If coordinates provided and valid, filter by proximity
+        const lat = parseFloat(latitude);
+        const lng = parseFloat(longitude);
+        if (latitude && longitude && !isNaN(lat) && !isNaN(lng) &&
+            !(lat === 0 && lng === 0)) {
+            query = {
+                location: {
+                    $near: {
+                        $geometry: {
+                            type: 'Point',
+                            coordinates: [lng, lat]
+                        },
+                        $maxDistance: radius * 1000
+                    }
+                }
+            };
+        }
+        // If no valid coordinates, return all crops (no proximity filter)
+    } else if (req.user.role === 'Admin') {
+        query = {}; // Admin sees all
     }
+    // Farmers use /farmer-crops endpoint
 
-    const crops = await Crop.find(query).populate('farmerId', 'name phone location profileImage');
+    const crops = await Crop.find(query).populate('farmerId', 'name email location profileImage phone');
     res.json(crops);
 });
 
@@ -55,12 +87,12 @@ const verifyCrop = asyncHandler(async (req, res) => {
     const crop = await Crop.findById(req.params.id);
 
     if (crop) {
-        crop.status = status; // e.g. 'Verified', 'Rejected'
+        crop.status = status;
         crop.agentVerification = {
             status: status === 'Verified' ? 'Verified' : 'Rejected',
-            report: report || crop.agentVerification.report,
+            report: report || crop.agentVerification?.report || '',
             agentId: req.user._id,
-            inspectionImages: inspectionImages || crop.agentVerification.inspectionImages
+            inspectionImages: inspectionImages || crop.agentVerification?.inspectionImages || []
         };
 
         const updatedCrop = await crop.save();
@@ -73,15 +105,14 @@ const verifyCrop = asyncHandler(async (req, res) => {
 
 // @desc    Delete a crop
 // @route   DELETE /api/crops/:id
-// @access  Private/Farmer
+// @access  Private/Farmer or Admin
 const deleteCrop = asyncHandler(async (req, res) => {
     const crop = await Crop.findById(req.params.id);
 
     if (crop) {
-        // Ensure only the farmer who created the crop can delete it
         if (crop.farmerId.toString() !== req.user._id.toString() && req.user.role !== 'Admin') {
             res.status(401);
-            throw new Error('User not authorized to delete this crop');
+            throw new Error('Not authorized to delete this crop');
         }
         await crop.deleteOne();
         res.json({ message: 'Crop removed' });

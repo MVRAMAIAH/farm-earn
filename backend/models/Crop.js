@@ -26,7 +26,7 @@ const cropSchema = new mongoose.Schema(
         },
         cropImage: {
             type: String,
-            required: [true, 'Please add a crop image'],
+            default: '',   // No longer required
         },
         description: {
             type: String,
@@ -61,15 +61,30 @@ const cropSchema = new mongoose.Schema(
                 default: [],
             },
         },
+        // Location is now optional — stored only if GPS is available
         location: {
-            type: String,
-            required: [true, 'Please add a location'],
+            type: {
+                type: String,
+                enum: ['Point'],
+                default: 'Point',
+            },
+            coordinates: {
+                type: [Number],
+                default: [0, 0],   // Default to [0,0] when no GPS
+            },
+            address: {
+                type: String,
+                default: '',
+            }
         },
     },
     {
         timestamps: true,
     }
 );
+
+// Only use 2dsphere index when coordinates are valid
+cropSchema.index({ location: '2dsphere' });
 
 const Crop = mongoose.model('Crop', cropSchema);
 

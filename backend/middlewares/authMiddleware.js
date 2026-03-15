@@ -1,18 +1,18 @@
-import admin from '../utils/firebaseAdmin.js';
 import asyncHandler from 'express-async-handler';
 import User from '../models/User.js';
+import jwt from 'jsonwebtoken';
 
 const protect = asyncHandler(async (req, res, next) => {
-    let idToken;
+    let token;
 
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         try {
-            idToken = req.headers.authorization.split(' ')[1];
-            // Verify Firebase ID Token
-            const decodedToken = await admin.auth().verifyIdToken(idToken);
+            token = req.headers.authorization.split(' ')[1];
+            // Verify JWT Token
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
             
-            // Find user in our db using firebaseUid
-            req.user = await User.findOne({ firebaseUid: decodedToken.uid });
+            // Find user in our db using token id
+            req.user = await User.findById(decoded.id).select('-password');
             
             if (!req.user) {
                 res.status(401);
@@ -27,7 +27,7 @@ const protect = asyncHandler(async (req, res, next) => {
         }
     }
 
-    if (!idToken) {
+    if (!token) {
         res.status(401);
         throw new Error('Not authorized, no token');
     }

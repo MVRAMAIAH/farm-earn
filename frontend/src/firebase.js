@@ -10,8 +10,20 @@ const firebaseConfig = {
     appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const googleProvider = new GoogleAuthProvider();
+let app, auth, googleProvider;
+
+try {
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    googleProvider = new GoogleAuthProvider();
+} catch (error) {
+    console.error("Firebase initialization failed! Please check your Vercel Environment Variables.", error);
+    // Provide a dummy auth object so the app doesn't crash completely, though login will fail
+    auth = {
+        signOut: async () => {},
+        currentUser: null
+    };
+    googleProvider = {};
+}
 
 export { auth, googleProvider };

@@ -16,6 +16,9 @@ try {
     app = initializeApp(firebaseConfig);
     auth = getAuth(app);
     googleProvider = new GoogleAuthProvider();
+    googleProvider.setCustomParameters({
+        prompt: 'select_account'
+    });
 } catch (error) {
     console.error("Firebase initialization failed! Please check your Vercel Environment Variables.", error);
     // Provide a dummy auth object so the app doesn't crash completely, though login will fail

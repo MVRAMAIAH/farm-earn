@@ -8,6 +8,7 @@ const baseURL = import.meta.env.VITE_API_URL ||
 
 const api = axios.create({
     baseURL,
+    timeout: 60000, // 60 seconds timeout specifically to allow free Render limits, but preventing infinite hangs
     headers: {
         'Content-Type': 'application/json',
     },

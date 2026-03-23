@@ -32,18 +32,23 @@ export const AuthProvider = ({ children }) => {
 
     const loginWithGoogle = async () => {
         try {
+            toast.info('Opening Google popup...', { toastId: 'googlePopup', autoClose: 4000 });
             const result = await signInWithPopup(auth, googleProvider);
+            toast.dismiss('googlePopup');
             const firebaseUser = result.user;
             
             try {
                 // Check if user exists in backend
+                toast.info('Authenticating with backend... (This may take up to 50s if the server is asleep)', { toastId: 'backendAuth', autoClose: 5000 });
                 const res = await api.post('/auth/login', { firebaseUid: firebaseUser.uid });
+                toast.dismiss('backendAuth');
                 // If successful (user exists), log them in
                 if (res.data.token) localStorage.setItem('token', res.data.token);
                 setUser(res.data);
                 localStorage.setItem('user', JSON.stringify(res.data));
                 return { isNewUser: false, data: res.data };
             } catch (backendError) {
+                toast.dismiss('backendAuth');
                 // If backend returns 404, the user needs to complete their profile
                 if (backendError.response && backendError.response.status === 404) {
                     return {

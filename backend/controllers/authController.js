@@ -9,13 +9,21 @@ const registerUser = asyncHandler(async (req, res) => {
     const { name, email, phone, aadhar, firebaseUid, role, location, profileImage } = req.body;
 
     // Check if user exists by email, phone, aadhar, or firebaseUid
-    const userExists = await User.findOne({ 
+    const existingUsers = await User.find({ 
         $or: [{ email }, { phone }, { aadhar }, { firebaseUid }] 
     });
 
-    if (userExists) {
+    if (existingUsers.length > 0) {
+        const existingUser = existingUsers[0];
+        let duplicateField = 'credentials';
+        
+        if (existingUser.email === email) duplicateField = 'email address';
+        else if (existingUser.phone === phone) duplicateField = 'phone number';
+        else if (existingUser.aadhar === aadhar) duplicateField = 'Aadhar number';
+        else if (existingUser.firebaseUid === firebaseUid) duplicateField = 'Google account';
+        
         res.status(400);
-        throw new Error('User with these credentials already exists in the database');
+        throw new Error(`A user with this ${duplicateField} already exists in the database.`);
     }
 
     const user = await User.create({

@@ -32,9 +32,12 @@ api.interceptors.response.use(
         const message = error.response?.data?.message || error.message || 'Something went wrong';
         
         // Skip toast for intentional 404s during Google sign-in checks
-        const isAuthCheck = error.config?.url === '/auth/login' && error.response?.status === 404;
+        const isAuthCheck = error.config?.url?.includes('/auth/login') && error.response?.status === 404;
         
-        if (!isAuthCheck) {
+        // Skip toast for missing notifications endpoint
+        const isNotificationCheck = error.config?.url?.includes('/notifications') && error.response?.status === 404;
+        
+        if (!isAuthCheck && !isNotificationCheck) {
             toast.error(message);
         }
 

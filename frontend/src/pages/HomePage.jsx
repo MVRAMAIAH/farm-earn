@@ -1,8 +1,11 @@
+import { useContext } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ShoppingCart, ShieldCheck, TrendingUp, Users, ArrowRight, Sprout } from 'lucide-react';
+import { AuthContext } from '../context/AuthContext';
 
 const HomePage = () => {
+    const { user } = useContext(AuthContext);
     const containerVariants = {
         hidden: { opacity: 0 },
         visible: {
@@ -34,9 +37,15 @@ const HomePage = () => {
                             Farm Earn connects farmers directly with buyers through a secure, verified digital marketplace. Real crops, real verification, real profit.
                         </p>
                         <div className="mt-10 flex space-x-4">
-                            <Link to="/login" className="btn-primary flex items-center px-8 py-4 text-lg">
-                                Get Started <ArrowRight className="ml-2 h-5 w-5" />
-                            </Link>
+                            {user && user.role ? (
+                                <Link to={`/dashboard/${user.role.toLowerCase()}`} className="btn-primary flex items-center px-8 py-4 text-lg">
+                                    Go to Dashboard <ArrowRight className="ml-2 h-5 w-5" />
+                                </Link>
+                            ) : (
+                                <Link to="/login" className="btn-primary flex items-center px-8 py-4 text-lg">
+                                    Get Started <ArrowRight className="ml-2 h-5 w-5" />
+                                </Link>
+                            )}
                             <Link to="/marketplace" className="btn-outline flex items-center px-8 py-4 text-lg">
                                 Browse Crops
                             </Link>
@@ -111,7 +120,11 @@ const HomePage = () => {
             <section className="bg-gray-900 py-20">
                 <div className="max-w-4xl mx-auto px-4 text-center">
                     <h2 className="text-3xl text-white font-bold mb-6 text-white">Ready to digitize your agricultural trade?</h2>
-                    <Link to="/login" className="btn-primary px-10 py-5 text-xl inline-block">Join Farm Earn Now</Link>
+                    {user && user.role ? (
+                        <Link to={`/dashboard/${user.role.toLowerCase()}`} className="btn-primary px-10 py-5 text-xl inline-block">Go to Dashboard</Link>
+                    ) : (
+                        <Link to="/login" className="btn-primary px-10 py-5 text-xl inline-block">Join Farm Earn Now</Link>
+                    )}
                 </div>
             </section>
         </div>

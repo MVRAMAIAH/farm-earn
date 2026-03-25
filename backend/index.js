@@ -51,6 +51,24 @@ app.get('/api', (req, res) => {
     res.send('Farm Earn API is running...');
 });
 
+// Diagnostic endpoint to list all routes
+app.get('/api/debug-routes', (req, res) => {
+    const routes = [];
+    app._router.stack.forEach((middleware) => {
+        if (middleware.route) {
+            routes.push(`${Object.keys(middleware.route.methods)} ${middleware.route.path}`);
+        } else if (middleware.name === 'router') {
+            middleware.handle.stack.forEach((handler) => {
+                if (handler.route) {
+                    const methods = Object.keys(handler.route.methods).join(', ');
+                    routes.push(`${methods} ${middleware.regexp.toString().replace(/\\\//g, '/').replace('^/', '').replace('/?(?=/|$)', '')}${handler.route.path}`);
+                }
+            });
+        }
+    });
+    res.json(routes);
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/crops', cropRoutes);
 app.use('/api/users', userRoutes);

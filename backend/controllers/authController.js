@@ -82,7 +82,20 @@ const authUser = asyncHandler(async (req, res) => {
         throw new Error('Firebase UID is required');
     }
 
-    const user = await User.findOne({ firebaseUid });
+    let user = await User.findOne({ firebaseUid });
+
+    // If not found by firebaseUid, check if a user exists with this email (pre-created by Admin)
+    if (!user && req.body.email) {
+        user = await User.findOne({ email: req.body.email });
+        if (user && !user.firebaseUid) {
+            user.firebaseUid = firebaseUid;
+            await user.save();
+        } else if (user && user.firebaseUid !== firebaseUid) {
+            // Email matches but Firebase UID is different - security check
+            res.status(400);
+            throw new Error('This email is already linked to a different Google account.');
+        }
+    }
 
     if (user) {
         // Auto-upgrade role to Admin for designated admin emails

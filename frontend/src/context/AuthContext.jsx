@@ -40,7 +40,10 @@ export const AuthProvider = ({ children }) => {
             try {
                 // Check if user exists in backend
                 toast.info('Authenticating with backend... (This may take up to 50s if the server is asleep)', { toastId: 'backendAuth', autoClose: 5000 });
-                const res = await api.post('/auth/login', { firebaseUid: firebaseUser.uid });
+                const res = await api.post('/auth/login', { 
+                    firebaseUid: firebaseUser.uid,
+                    email: firebaseUser.email 
+                });
                 toast.dismiss('backendAuth');
                 // If successful (user exists), log them in
                 if (res.data.token) localStorage.setItem('token', res.data.token);

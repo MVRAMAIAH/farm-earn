@@ -149,8 +149,8 @@ const addAgent = asyncHandler(async (req, res) => {
         phone,
         password: crypto.randomBytes(16).toString('hex'),
         role: 'Agent',
-        location: 'To be updated',
-        aadhar: '000000000000',
+        location: 'Verified Agent Office',
+        aadhar: '000000000000', // Default placeholder
         isVerified: true,
     });
 

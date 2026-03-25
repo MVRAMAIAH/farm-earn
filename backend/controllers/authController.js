@@ -1,5 +1,5 @@
 import asyncHandler from 'express-async-handler';
-import mongoose from 'mongoose';
+import User from '../models/User.js';
 import generateToken from '../utils/generateToken.js';
 
 // Emails that are automatically assigned Admin role
@@ -19,7 +19,7 @@ const registerUser = asyncHandler(async (req, res) => {
     const finalRole = ADMIN_EMAILS.includes(email?.toLowerCase()) ? 'Admin' : role;
 
     // Check if user exists by email, phone, aadhar, or firebaseUid
-    const existingUsers = await mongoose.model('User').find({ 
+    const existingUsers = await User.find({ 
         $or: [{ email }, { phone }, { aadhar }, { firebaseUid }] 
     });
 
@@ -36,7 +36,7 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new Error(`A user with this ${duplicateField} already exists in the database.`);
     }
 
-    const user = await mongoose.model('User').create({
+    const user = new User({
         name,
         email,
         phone,
@@ -47,6 +47,8 @@ const registerUser = asyncHandler(async (req, res) => {
         profileImage,
         isVerified: true // Assuming true as Firebase handles auth
     });
+
+    await user.save();
 
     if (user) {
         res.status(201).json({
@@ -82,11 +84,11 @@ const authUser = asyncHandler(async (req, res) => {
         throw new Error('Firebase UID is required');
     }
 
-    let user = await mongoose.model('User').findOne({ firebaseUid });
+    let user = await User.findOne({ firebaseUid });
 
     // If not found by firebaseUid, check if a user exists with this email (pre-created by Admin)
     if (!user && req.body.email) {
-        user = await mongoose.model('User').findOne({ email: req.body.email });
+        user = await User.findOne({ email: req.body.email });
         if (user && !user.firebaseUid) {
             user.firebaseUid = firebaseUid;
             await user.save();

@@ -6,7 +6,14 @@ const baseURL = import.meta.env.VITE_API_URL ||
         ? 'https://farm-earn.onrender.com/api' 
         : 'http://localhost:5000/api');
 
-const api = axios.create({
+// Check if axios is defined (defensive for some build environments)
+if (typeof axios === 'undefined') {
+    console.error('Axios is undefined in api.js. Check your installation and imports.');
+}
+
+const apiInstance = (axios.default || axios);
+
+const api = apiInstance.create({
     baseURL,
     timeout: 60000, // 60 seconds timeout specifically to allow free Render limits, but preventing infinite hangs
     headers: {

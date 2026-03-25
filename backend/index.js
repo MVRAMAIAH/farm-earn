@@ -6,6 +6,13 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import connectDB from './config/db.js';
 
+// Load models to register with Mongoose
+import './models/User.js';
+import './models/Crop.js';
+import './models/Notification.js';
+import './models/Transaction.js';
+import './models/OTP.js';
+
 import authRoutes from './routes/authRoutes.js';
 import cropRoutes from './routes/cropRoutes.js';
 import userRoutes from './routes/userRoutes.js';
